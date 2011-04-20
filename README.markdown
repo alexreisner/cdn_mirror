@@ -5,4 +5,9 @@ This is a mirror of some libraries (jQuery, jQueryUI, YUI) as they are stored on
 
 A spider script is included for downloading the newest versions from the actual CDNs.
 
-NOTE: Google's CDN appears to be missing the `ui-anim_basic_16x16.gif` image for all themes other than `base` in jQueryUI 1.8.0 and 1.8.1. No attempt has been made to correct this in the mirror.
+
+Notes
+-----
+
+* Google's CDN appears to be missing the `ui-anim_basic_16x16.gif` image for all themes other than `base` in jQueryUI 1.8.0 and 1.8.1. No attempt has been made to correct this in the mirror.
+* For YUI download links see: http://yuilibrary.com/downloads/
