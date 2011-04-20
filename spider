@@ -3,6 +3,19 @@
 # Spider for downloading assets from CDNs. Requires Ruby 1.9.
 #
 
+def usage
+  script = File.basename(__FILE__)
+  puts "Usage:"
+  puts "  #{script} [options] <cdn> <library> <version>"
+  puts ""
+  puts "Options:"
+  puts "  -w/--overwrite    overwrite existing files"
+  puts "  -h/--help         print this help"
+  puts ""
+  puts "Example:"
+  puts "  #{script} google jquery 1.5.2"
+end
+
 require 'fileutils'
 require 'net/http'
 require 'uri'
@@ -17,7 +30,10 @@ GetoptLong.new(
   ['--help'      , '-h' , GetoptLong::NO_ARGUMENT],
   ['--overwrite' , '-w' , GetoptLong::NO_ARGUMENT]
 ).each do |opt,arg|
-  if opt == "--overwrite"
+  case opt
+  when "--help"
+    usage; exit
+  when "--overwrite"
     $overwrite = true
   end
 end
