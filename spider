@@ -63,18 +63,27 @@ def need_file?(file)
   $overwrite or !File.exists?(local)
 end
 
+def get_http(file)
+  file = "#{$library}/#{file}"
+  uri  = URI.parse(base_url + file)
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.request(Net::HTTP::Get.new(uri.request_uri))
+end
+
+def read_file(file)
+  res = get_http(file)
+  res.body if res.code == "200"
+end
+
 def fetch_file(file)
   return unless need_file?(file)
 
   print "Fetching #{file} "
 
-  file  = "#{$library}/#{file}"
-  local = "#{$cdn}/#{file}"
-  uri   = URI.parse(base_url + file)
-  http  = Net::HTTP.new(uri.host, uri.port)
-  res   = http.request(Net::HTTP::Get.new(uri.request_uri))
+  res = get_http(file)
 
   if res.code == "200"
+    local = "#{$cdn}/#{$library}/#{file}"
     verify_directory(File.dirname(local))
     content = res.body
     File.open(local, 'w'){ |f| f.write(content) }
@@ -105,14 +114,12 @@ when 'jqueryui'
     mint-choc black-tie trontastic swanky-purse]
   themes.each do |theme|
     file = "#{$version}/themes/#{theme}/jquery-ui.css"
-    if need_file?(file)
-      if css = fetch_file(file)
-        fetch_file("#{$version}/themes/#{theme}/minified/jquery-ui.min.css") if theme == "base"
-        images = css.scan(/url\(([^)]+)\)/).map{ |i| i[0] }.uniq
-        images.each{ |image| fetch_file("#{$version}/themes/#{theme}/#{image}") }
-      else
-        puts "Error: #{theme} theme not found."
-      end
+    if css = need_file?(file) ? fetch_file(file) : read_file(file)
+      fetch_file("#{$version}/themes/#{theme}/minified/jquery-ui.min.css") if theme == "base"
+      images = css.scan(/url\(\s*['"]?([^'"\s)]+)['"]?\s*\)/).map{ |i| i[0] }.uniq
+      images.each{ |image| fetch_file("#{$version}/themes/#{theme}/#{image}") }
+    else
+      puts "Error: #{theme} theme not found."
     end
   end
 end
