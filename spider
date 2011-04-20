@@ -3,6 +3,10 @@
 # Spider for downloading assets from CDNs. Requires Ruby 1.9.
 #
 
+if RUBY_VERSION.split('.')[1].to_i < 9
+  puts "Requires Ruby 1.9."; exit
+end
+
 def usage
   script = File.basename(__FILE__)
   puts "Usage:"
