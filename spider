@@ -6,6 +6,26 @@
 require 'fileutils'
 require 'net/http'
 require 'uri'
+require 'getoptlong'
+
+#
+# parse arguments
+#
+$overwrite = false
+
+GetoptLong.new(
+  ['--help'      , '-h' , GetoptLong::NO_ARGUMENT],
+  ['--overwrite' , '-w' , GetoptLong::NO_ARGUMENT]
+).each do |opt,arg|
+  if opt == "--overwrite"
+    $overwrite = true
+  end
+end
+
+$cdn     = ARGV[0]
+$library = ARGV[1]
+$version = ARGV[2]
+
 
 def base_url
   {
@@ -17,19 +37,26 @@ def verify_directory(dirname)
   FileUtils.mkdir_p(dirname) unless Dir.exists?(dirname)
 end
 
+def need_file?(file)
+  local = "#{$cdn}/#{$library}/#{$version}/#{file}"
+  $overwrite or !File.exists?(local)
+end
+
 def fetch_file(file)
-  file = "#{$library}/#{$version}/#{file}"
+  return unless need_file?(file)
+
   print "Fetching #{file} "
 
-  uri  = URI.parse(base_url + file)
-  http = Net::HTTP.new(uri.host, uri.port)
-  res  = http.request(Net::HTTP::Get.new(uri.request_uri))
+  file  = "#{$library}/#{$version}/#{file}"
+  local = "#{$cdn}/#{file}"
+  uri   = URI.parse(base_url + file)
+  http  = Net::HTTP.new(uri.host, uri.port)
+  res   = http.request(Net::HTTP::Get.new(uri.request_uri))
 
   if res.code == "200"
-    filepath = $cdn + '/' + file
-    verify_directory(File.dirname(filepath))
+    verify_directory(File.dirname(local))
     content = res.body
-    File.open(filepath, 'w'){ |f| f.write(content) }
+    File.open(local, 'w'){ |f| f.write(content) }
     puts "[OK]"
   else
     content = nil
@@ -37,10 +64,6 @@ def fetch_file(file)
   end
   content
 end
-
-$cdn     = ARGV[0]
-$library = ARGV[1]
-$version = ARGV[2]
 
 case $library
 when 'jquery'
@@ -53,12 +76,15 @@ when 'jqueryui'
     south-street blitzer humanity hot-sneaks excite-bike vader dot-luv
     mint-choc black-tie trontastic swanky-purse]
   themes.each do |theme|
-    if css = fetch_file("themes/#{theme}/jquery-ui.css")
-      fetch_file("themes/#{theme}/minified/jquery-ui.min.css") if theme == "base"
-      images = css.scan(/url\(([^)]+)\)/).map{ |i| i[0] }.uniq
-      images.each{ |image| fetch_file("themes/#{theme}/#{image}") }
-    else
-      puts "Error: #{theme} theme not found."
+    file = "themes/#{theme}/jquery-ui.css"
+    if need_file?(file)
+      if css = fetch_file(file)
+        fetch_file("themes/#{theme}/minified/jquery-ui.min.css") if theme == "base"
+        images = css.scan(/url\(([^)]+)\)/).map{ |i| i[0] }.uniq
+        images.each{ |image| fetch_file("themes/#{theme}/#{image}") }
+      else
+        puts "Error: #{theme} theme not found."
+      end
     end
   end
 end
