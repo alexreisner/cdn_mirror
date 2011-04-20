@@ -46,6 +46,9 @@ $cdn     = ARGV[0]
 $library = ARGV[1]
 $version = ARGV[2]
 
+if $version.nil? or $version == ""
+  usage; exit
+end
 
 def base_url
   {
