@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+#
+# Spider for downloading assets from CDNs. Requires Ruby 1.9.
+#
+
+require 'fileutils'
+require 'net/http'
+require 'uri'
+
+def base_url
+  {
+    "google" => "http://ajax.googleapis.com/ajax/libs/"
+  }[$cdn]
+end
+
+def verify_directory(dirname)
+  FileUtils.mkdir_p(dirname) unless Dir.exists?(dirname)
+end
+
+def fetch_file(file)
+  file = "#{$library}/#{$version}/#{file}"
+  print "Fetching #{file} "
+
+  uri  = URI.parse(base_url + file)
+  http = Net::HTTP.new(uri.host, uri.port)
+  res  = http.request(Net::HTTP::Get.new(uri.request_uri))
+
+  if res.code == "200"
+    filepath = $cdn + '/' + file
+    verify_directory(File.dirname(filepath))
+    content = res.body
+    File.open(filepath, 'w'){ |f| f.write(content) }
+    puts "[OK]"
+  else
+    content = nil
+    puts "[error: #{res.code}]"
+  end
+  content
+end
+
+$cdn     = ARGV[0]
+$library = ARGV[1]
+$version = ARGV[2]
+
+case $library
+when 'jquery'
+  fetch_file "jquery.min.js"
+
+when 'jqueryui'
+  fetch_file "jquery-ui.min.js"
+  themes = %w[base ui-lightness ui-darkness smoothness start redmond sunny
+    overcast le-frog flick pepper-grinder eggplant dark-hive cupertino
+    south-street blitzer humanity hot-sneaks excite-bike vader dot-luv
+    mint-choc black-tie trontastic swanky-purse]
+  themes.each do |theme|
+    if css = fetch_file("themes/#{theme}/jquery-ui.css")
+      fetch_file("themes/#{theme}/minified/jquery-ui.min.css") if theme == "base"
+      images = css.scan(/url\(([^)]+)\)/).map{ |i| i[0] }.uniq
+      images.each{ |image| fetch_file("themes/#{theme}/#{image}") }
+    else
+      puts "Error: #{theme} theme not found."
+    end
+  end
+end
