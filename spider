@@ -29,7 +29,8 @@ $version = ARGV[2]
 
 def base_url
   {
-    "google" => "http://ajax.googleapis.com/ajax/libs/"
+    "google"    => "http://ajax.googleapis.com/ajax/libs/",
+    "microsoft" => "http://ajax.aspnetcdn.com/ajax/",
   }[$cdn]
 end
 
@@ -38,7 +39,7 @@ def verify_directory(dirname)
 end
 
 def need_file?(file)
-  local = "#{$cdn}/#{$library}/#{$version}/#{file}"
+  local = "#{$cdn}/#{$library}/#{file}"
   $overwrite or !File.exists?(local)
 end
 
@@ -47,7 +48,7 @@ def fetch_file(file)
 
   print "Fetching #{file} "
 
-  file  = "#{$library}/#{$version}/#{file}"
+  file  = "#{$library}/#{file}"
   local = "#{$cdn}/#{file}"
   uri   = URI.parse(base_url + file)
   http  = Net::HTTP.new(uri.host, uri.port)
@@ -67,21 +68,28 @@ end
 
 case $library
 when 'jquery'
-  fetch_file "jquery.min.js"
+  if $cdn == "google"
+    fetch_file "#{$version}/jquery.js"
+    fetch_file "#{$version}/jquery.min.js"
+  elsif $cdn == "microsoft"
+    fetch_file "jquery-#{$version}.js"
+    fetch_file "jquery-#{$version}.min.js"
+  end
 
 when 'jqueryui'
-  fetch_file "jquery-ui.min.js"
+  $library = "jquery.ui" if $cdn == "microsoft"
+  fetch_file "#{$version}/jquery-ui.min.js"
   themes = %w[base ui-lightness ui-darkness smoothness start redmond sunny
     overcast le-frog flick pepper-grinder eggplant dark-hive cupertino
     south-street blitzer humanity hot-sneaks excite-bike vader dot-luv
     mint-choc black-tie trontastic swanky-purse]
   themes.each do |theme|
-    file = "themes/#{theme}/jquery-ui.css"
+    file = "#{$version}/themes/#{theme}/jquery-ui.css"
     if need_file?(file)
       if css = fetch_file(file)
-        fetch_file("themes/#{theme}/minified/jquery-ui.min.css") if theme == "base"
+        fetch_file("#{$version}/themes/#{theme}/minified/jquery-ui.min.css") if theme == "base"
         images = css.scan(/url\(([^)]+)\)/).map{ |i| i[0] }.uniq
-        images.each{ |image| fetch_file("themes/#{theme}/#{image}") }
+        images.each{ |image| fetch_file("#{$version}/themes/#{theme}/#{image}") }
       else
         puts "Error: #{theme} theme not found."
       end
