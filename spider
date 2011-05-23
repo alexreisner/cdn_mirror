@@ -120,6 +120,7 @@ when 'jqueryui'
     if css = need_file?(file) ? fetch_file(file) : read_file(file)
       fetch_file("#{$version}/themes/#{theme}/minified/jquery-ui.min.css") if theme == "base"
       images = css.scan(/url\(\s*['"]?([^'"\s)]+)['"]?\s*\)/).map{ |i| i[0] }.uniq
+      images.reject!{ |i| i.match(/^data:/) } # embedded image data
       images.each{ |image| fetch_file("#{$version}/themes/#{theme}/#{image}") }
     else
       puts "Error: #{theme} theme not found."
